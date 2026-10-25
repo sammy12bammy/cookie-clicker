@@ -1,0 +1,60 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+
+group = 'cookieclicker'
+version = '1.0-SNAPSHOT'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // Logging
+    implementation 'ch.qos.logback:logback-classic:1.5.17'
+
+    // Carried over from the Polymorphia homework. Uncomment only if the game
+    // needs the observer SPI or text-to-speech.
+    // implementation 'io.github.billwrightcuprof:GameObserverSPI:4.7.1'
+    // implementation 'net.sf.sociaal:freetts:1.2.2'
+
+    // Unit testing
+    testImplementation platform('org.junit:junit-bom:5.10.0')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testImplementation 'org.junit.platform:junit-platform-suite:1.10.0'
+
+    // Mocking, for testing dependency injection with fake collaborators
+    testImplementation 'org.mockito:mockito-core:5.14.2'
+
+    // BDD testing libraries
+    testImplementation 'io.cucumber:cucumber-picocontainer:7.21.1'
+    testImplementation 'io.cucumber:cucumber-java:7.21.1'
+    testImplementation 'io.cucumber:cucumber-junit-platform-engine:7.21.1'
+}
+
+application {
+    // Entry point does not exist yet; update once the main class is written.
+    mainClass = 'cookieclicker.CookieClicker'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+configurations {
+    cucumberRuntime {
+        extendsFrom testImplementation
+    }
+}
+
+tasks.withType(Javadoc).configureEach {
+    options.quiet()
+}
