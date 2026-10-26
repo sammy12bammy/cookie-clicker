@@ -9,7 +9,16 @@ import java.util.Set;
 
 public class EventBus implements IGameSubject {
 
+    private static final EventBus INSTANCE = new EventBus();
+
     private final Map<EventType, List<IGameObserver>> observers = new EnumMap<>(EventType.class);
+
+    private EventBus() {
+    }
+
+    public static EventBus getInstance() {
+        return INSTANCE;
+    }
 
     @Override
     public void attach(IGameObserver observer) {
@@ -28,6 +37,11 @@ public class EventBus implements IGameSubject {
         for (List<IGameObserver> attached : observers.values()) {
             attached.remove(observer);
         }
+    }
+
+    // Removes every observer. The bus is shared, so tests call this to start from a clean slate.
+    public void detachAll() {
+        observers.clear();
     }
 
     public void postEvent(EventType type, String message) {

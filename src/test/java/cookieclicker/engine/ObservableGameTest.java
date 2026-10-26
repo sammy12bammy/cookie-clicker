@@ -8,6 +8,7 @@ import cookieclicker.observer.IGameObserver;
 import cookieclicker.strategy.ChocolateChipCookieStrategy;
 import cookieclicker.strategy.NormalCookieStrategy;
 import cookieclicker.strategy.SugerCookieStrategy;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -15,6 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ObservableGameTest {
@@ -26,9 +28,28 @@ class ObservableGameTest {
 
     @BeforeEach
     void setUp() {
-        game = new ObservableGame(new Player(), new EventBus());
+        EventBus.getInstance().detachAll();
+        game = new ObservableGame(new Player());
         messages = new ArrayList<>();
         recorder = messages::add;
+    }
+
+    @AfterEach
+    void tearDown() {
+        EventBus.getInstance().detachAll();
+    }
+
+    @Test
+    void eventBusIsASingleton() {
+        assertSame(EventBus.getInstance(), EventBus.getInstance());
+    }
+
+    @Test
+    void gamesShareTheSameBus() {
+        game.attach(recorder);
+        new ObservableGame(new Player()).clickCookie(new Cookie("Normal", new NormalCookieStrategy()));
+
+        assertEquals(List.of("Clicked Normal cookie", "Dollars: 1"), messages);
     }
 
     @Test

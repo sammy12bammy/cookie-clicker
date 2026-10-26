@@ -20,13 +20,17 @@ public class ObservableGame extends Game implements IGameSubject, IPlayerSubject
 
     private final EventBus eventBus;
 
-    public ObservableGame(Player player, EventBus eventBus) {
-        super(player);
+    public ObservableGame(Player player, EventBus eventBus, List<Cookie> cookies) {
+        super(player, cookies);
         this.eventBus = eventBus;
     }
 
+    public ObservableGame(Player player, EventBus eventBus) {
+        this(player, eventBus, List.of());
+    }
+
     public ObservableGame(Player player) {
-        this(player, new EventBus());
+        this(player, EventBus.getInstance());
     }
 
     @Override
