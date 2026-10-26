@@ -1,14 +1,9 @@
 # Cookie Clicker
 
-Lizze and Sam's OOP project.
-
-    Names: Lizze <last name>, Sam Balent
+    Names: Lizze Ruff, Sam Balent
     Java Version: 25
     Build Tool: Gradle (wrapper included, 9.7.1)
     Test Coverage Screenshot: <paste here>
-
-> **Status: template.** Every section marked `TBD` or listed under *Assumptions* is a
-> placeholder to confirm or replace as the design firms up.
 
 ## Overview
 
@@ -30,38 +25,45 @@ These are guesses made while setting up the project. Change any that are wrong.
 
 ## Design Patterns (rubric: at least 3, with where and how)
 
-Candidates. Confirm, drop or replace, and fill in the details.
+Five patterns are in the code today.
 
-| Pattern | Where | How / why |
+| Pattern | Where | Role |
 |---|---|---|
-| Observer | `observer/`, game state to UI | The UI and any stats or log listeners subscribe to game events (cookies changed, upgrade bought) so the model never depends on the UI. |
-| Strategy | `strategy/` | Interchangeable production or cost-scaling rules per generator (linear, exponential). Swapped without touching the generator class. |
-| Factory | `factory/` | Builds generators and upgrades from definitions, so the engine codes to the `Generator` / `Upgrade` abstractions. `TBD` Factory vs SPI. |
-| Decorator | `model/` (optional) | Upgrades wrap a generator to boost its output. `TBD` |
-| Command | `engine/` (optional) | Click and purchase actions as objects, for undo or replay. `TBD` |
+| Strategy | `strategy/`, used by `model/Cookie` | What a click does |
+| Observer | `observer/`, fired from `engine/ObservableGame` | How the UI learns about changes |
+| Singleton | `observer/EventBus` | One shared event bus |
+| Builder | `engine/Game.GameBuilder` | Assembling a configured game |
+| Factory Method via SPI | `observer/IGameObserverProvider` | Plugging in the UI without naming it |
 
-## Architecture / Project Structure
+### Strategy
 
-```
-src/main/java/cookieclicker/
-  model/      Core domain: Cookie wallet, Generator, Upgrade (interfaces + implementations)
-  engine/     Game loop, tick handling, wiring of the pieces (dependency injection happens here)
-  strategy/   Production and cost-scaling strategies
-  observer/   Event/listener interfaces and subjects
-  factory/    Creation of generators and upgrades
-  ui/         Swing views, only aware of observer/model interfaces
-  util/       Shared helpers (clock, formatting)
-src/main/resources/logback.xml
-src/test/java/cookieclicker/    Mirrors the main packages
-src/test/resources/features/    Cucumber feature files
-docs/                           Design notes and diagrams
-```
+* **Where:** `CookieStrategy` is the interface, with `NormalCookieStrategy`, `ChocolateChipCookieStrategy`, `OatMealRasinCookieStrategy` and `SugerCookieStrategy`. `Cookie` holds one.
+* **How:** `Cookie.doAction(player)` calls `strategy.apply(player)` and knows nothing about the concrete class. Normal adds $1, Chocolate Chip adds $5, Oatmeal subtracts $5, and Sugar doubles earnings for the next 5 clicks.
+* **Why:** a new kind of cookie is a new strategy class, with no change to `Cookie`. The strategy is passed in through the constructor, and `Cookie.setStrategy` swaps it while the game runs.
 
-## OO Principles (rubric)
+### Observer
 
-* **Coding to abstractions:** `TBD` list the main interfaces.
-* **Polymorphism:** `TBD` e.g. different `Generator` implementations driven through one interface.
-* **Dependency injection:** `TBD` e.g. the engine receives its clock, strategies and listeners through its constructor.
+* **Where:** `IGameObserver` (observer) and `IGameSubject` (subject), with `EventBus` keeping the observer lists. `ObservableGame` extends `Game` and posts the events.
+* **How:** after a click, `ObservableGame` posts `COOKIE_CLICKED`, `DOLLARS_CHANGED` and `BOOST_CHANGED`. A strategy swap posts `STRATEGY_CHANGED`. Observers can subscribe to chosen event types or to `ALL`. They receive a status message and read the current state through the read-only `IPlayerView`.
+* **Why:** the game logic never imports the UI. A Swing view, a logger or a test recorder all attach the same way. The design follows the observer setup from homework 8.
+
+### Singleton
+
+* **Where:** `EventBus.getInstance()`, with a private constructor.
+* **How:** every game and observer talks to the same bus, so an observer attached anywhere hears events from any `ObservableGame`.
+* **Trade-off:** a shared instance carries state between tests, so tests call `EventBus.getInstance().detachAll()` before and after each run. `ObservableGame` also accepts a bus through its constructor, so it still depends only on the instance it was given.
+
+### Builder
+
+* **Where:** `Game.GameBuilder`.
+* **How:** `new Game.GameBuilder().withDefaultCookies().withObserver(o).build()`. Every `with...` call is optional. If nothing observer-related is requested, `build()` returns a plain `Game`. Otherwise it returns an `ObservableGame` wired to the event bus and any observers.
+* **Why:** a game has several independent options (player, cookies, bus, observers, SPI discovery). A builder avoids a pile of constructor overloads, and callers only see the `Game` type.
+
+### Factory Method via SPI
+
+* **Where:** `IGameObserverProvider.create(IServiceContext)`, discovered by `ObservableGame.attachObserversFoundViaSPI()` with `ServiceLoader`.
+* **How:** the UI module will implement `IGameObserverProvider` and list it in `META-INF/services/cookieclicker.observer.IGameObserverProvider`. The game hands each provider an `IServiceContext` containing the `IPlayerSubject` and `IGameSubject`. The provider builds its observer from that.
+* **Why:** the engine creates observers without referencing a concrete UI class, so the UI can be added or removed without editing the engine.
 
 ## Libraries
 
@@ -79,10 +81,6 @@ docs/                           Design notes and diagrams
 ./gradlew test      # tests only
 ./gradlew run       # needs cookieclicker.CookieClicker to exist
 ```
-
-## Tests (rubric: at least 5 meaningful cases)
-
-`TBD`: list the test cases and what each one verifies.
 
 ## Team Notes
 
