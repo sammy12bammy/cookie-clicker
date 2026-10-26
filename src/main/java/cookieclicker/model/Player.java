@@ -1,6 +1,6 @@
 package cookieclicker.model;
 
-public class Player {
+public class Player implements IPlayerView {
 
     private static final int BOOST_MULTIPLIER = 2;
 
@@ -8,6 +8,7 @@ public class Player {
     private int boostedClicksRemaining;
     private int currentClickMultiplier = 1;
 
+    @Override
     public int getDollars() {
         return dollars;
     }
@@ -33,6 +34,7 @@ public class Player {
         boostedClicksRemaining = clicks;
     }
 
+    @Override
     public int getBoostedClicksRemaining() {
         return boostedClicksRemaining;
     }
